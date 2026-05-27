@@ -1,7 +1,7 @@
 use crate::steam_bridge::{AchievementRow, SteamSession};
 use crate::steam_library::{scan_installed_games, SteamGame};
 use crate::theme;
-use eframe::egui::{self, Align, Button, CentralPanel, Color32, Frame, Layout, RichText, ScrollArea, SidePanel, Stroke, TopBottomPanel, Ui, Vec2};
+use eframe::egui::{self, Align, Button, CentralPanel, Color32, Frame, Layout, RichText, ScrollArea, Sense, SidePanel, Stroke, TopBottomPanel, Ui, Vec2};
 use std::time::Duration;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -133,7 +133,7 @@ impl AchievementPanelApp {
         Frame::new()
             .fill(theme::PANEL_SOFT)
             .stroke(Stroke::new(1.0, color.linear_multiply(0.45)))
-            .corner_radius(egui::CornerRadius::same(999))
+            .corner_radius(egui::CornerRadius::same(255))
             .inner_margin(egui::Margin::symmetric(14, 8))
             .show(ui, |ui| {
                 ui.label(RichText::new(text).color(color).strong());
@@ -175,12 +175,10 @@ impl AchievementPanelApp {
 
     fn library_home(&mut self, ui: &mut Ui) {
         hero_card(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label(RichText::new("Oyunlarını seç, AppID ile bağlan, achievementleri yönet.").size(24.0).strong().color(theme::TEXT));
-                    ui.add_space(8.0);
-                    ui.label(theme::muted("Kurulu Steam oyunları yerel library manifestlerinden okunur. Oyun görselleri Steam CDN üzerinden gösterilir. Bir oyun seçtiğinde AppID otomatik dolar."));
-                });
+            ui.vertical(|ui| {
+                ui.label(RichText::new("Oyunlarını seç, AppID ile bağlan, achievementleri yönet.").size(24.0).strong().color(theme::TEXT));
+                ui.add_space(8.0);
+                ui.label(theme::muted("Kurulu Steam oyunları yerel library manifestlerinden okunur. Oyun görselleri Steam CDN üzerinden gösterilir. Bir oyun seçtiğinde AppID otomatik dolar."));
             });
         });
 
@@ -270,7 +268,8 @@ impl AchievementPanelApp {
 
         ScrollArea::vertical().show(ui, |ui| {
             for achievement in visible {
-                achievement_card(ui, &achievement, self.can_write(), |target| {
+                let can_write = self.can_write();
+                achievement_card(ui, &achievement, can_write, |target| {
                     self.set_one(&achievement.api_name, target);
                 });
                 ui.add_space(10.0);
@@ -440,37 +439,37 @@ fn metric_card(ui: &mut Ui, title: &str, value: String, subtitle: &str) {
 
 fn game_row(ui: &mut Ui, game: &SteamGame, selected: bool) -> egui::Response {
     let fill = if selected { theme::CARD_HOVER } else { theme::PANEL_SOFT };
-    Frame::new()
+    let inner = Frame::new()
         .fill(fill)
         .stroke(Stroke::new(1.0, if selected { theme::ACCENT } else { Color32::TRANSPARENT }))
         .corner_radius(egui::CornerRadius::same(14))
         .inner_margin(egui::Margin::same(10))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.add(egui::Image::new(game.capsule_url()).fit_to_exact_size(Vec2::new(92.0, 43.0)));
+                ui.add(egui::Image::from_uri(game.capsule_url()).fit_to_exact_size(Vec2::new(92.0, 43.0)));
                 ui.vertical(|ui| {
                     ui.label(RichText::new(&game.name).strong().color(theme::TEXT));
                     ui.label(theme::muted(format!("AppID {}", game.app_id)));
                 });
             });
-        })
-        .response
+        });
+    ui.interact(inner.response.rect, inner.response.id, Sense::click())
 }
 
 fn game_card(ui: &mut Ui, game: &SteamGame) -> egui::Response {
-    Frame::new()
+    let inner = Frame::new()
         .fill(theme::PANEL)
         .stroke(Stroke::new(1.0, theme::PANEL_SOFT))
         .corner_radius(egui::CornerRadius::same(20))
         .inner_margin(egui::Margin::same(12))
         .show(ui, |ui| {
             ui.set_min_width(330.0);
-            ui.add(egui::Image::new(game.capsule_url()).fit_to_exact_size(Vec2::new(300.0, 140.0)));
+            ui.add(egui::Image::from_uri(game.capsule_url()).fit_to_exact_size(Vec2::new(300.0, 140.0)));
             ui.add_space(8.0);
             ui.label(RichText::new(&game.name).size(17.0).strong().color(theme::TEXT));
             ui.label(theme::muted(format!("AppID {} • {}", game.app_id, game.install_dir)));
-        })
-        .response
+        });
+    ui.interact(inner.response.rect, inner.response.id, Sense::click())
 }
 
 fn achievement_card(ui: &mut Ui, row: &AchievementRow, can_write: bool, mut set_state: impl FnMut(bool)) {
@@ -486,7 +485,7 @@ fn achievement_card(ui: &mut Ui, row: &AchievementRow, can_write: bool, mut set_
                 let badge_color = if row.unlocked { theme::ACCENT_2 } else { theme::MUTED };
                 Frame::new()
                     .fill(badge_color.linear_multiply(0.18))
-                    .corner_radius(egui::CornerRadius::same(999))
+                    .corner_radius(egui::CornerRadius::same(255))
                     .inner_margin(egui::Margin::symmetric(10, 6))
                     .show(ui, |ui| ui.label(RichText::new(badge).color(badge_color).strong()));
 
