@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use steamworks::{AppId, CallbackHandle, Client, UserStatsReceived, UserStatsStored};
@@ -43,13 +43,11 @@ pub struct SteamSession {
 impl SteamSession {
     pub fn connect(app_id: u32) -> Result<Self> {
         if app_id == 0 {
-            return Err(anyhow!("AppID 0 geçerli değil."));
+            return Err(anyhow!("AppID 0 is not valid."));
         }
 
         let client = Client::init_app(AppId(app_id)).map_err(|err| {
-            anyhow!(
-                "Steam başlatılamadı: {err:?}. Steam açık mı, giriş yaptın mı, AppID hesabında var mı?"
-            )
+            anyhow!("Steam init failed: {err:?}. Start Steam, log in, and check that the AppID is available.")
         })?;
 
         let callback_state = Arc::new(Mutex::new(CallbackState::default()));
@@ -60,9 +58,9 @@ impl SteamSession {
                 state.stats_received = true;
                 state.stats_ok = value.result.is_ok();
                 state.last_callback_message = if value.result.is_ok() {
-                    "Steam stats callback başarılı.".to_owned()
+                    "Steam stats callback ok.".to_owned()
                 } else {
-                    format!("Steam stats callback hatası: {:?}", value.result)
+                    format!("Steam stats callback error: {:?}", value.result)
                 };
             }
         });
@@ -72,9 +70,9 @@ impl SteamSession {
             if let Ok(mut state) = stored_state.lock() {
                 state.last_store_ok = Some(value.result.is_ok());
                 state.last_callback_message = if value.result.is_ok() {
-                    "StoreStats başarılı.".to_owned()
+                    "StoreStats ok.".to_owned()
                 } else {
-                    format!("StoreStats hatası: {:?}", value.result)
+                    format!("StoreStats error: {:?}", value.result)
                 };
             }
         });
@@ -123,7 +121,7 @@ impl SteamSession {
         let stats = self.client.user_stats();
         let names = stats
             .get_achievement_names()
-            .ok_or_else(|| anyhow!("Achievement listesi alınamadı veya bu AppID için achievement yok."))?;
+            .ok_or_else(|| anyhow!("Could not load achievement names for this AppID."))?;
 
         let mut rows = Vec::with_capacity(names.len());
         for api_name in names {
@@ -165,17 +163,12 @@ impl SteamSession {
         let achievement = stats.achievement(api_name);
 
         if unlocked {
-            achievement
-                .set()
-                .map_err(|_| anyhow!("Achievement açılamadı: {api_name}"))?;
+            achievement.set().map_err(|_| anyhow!("Could not unlock achievement: {api_name}"))?;
         } else {
-            achievement
-                .clear()
-                .map_err(|_| anyhow!("Achievement kilitlenemedi: {api_name}"))?;
+            achievement.clear().map_err(|_| anyhow!("Could not lock achievement: {api_name}"))?;
         }
 
-        stats.store_stats()
-            .map_err(|_| anyhow!("Steam StoreStats başarısız oldu."))?;
+        stats.store_stats().map_err(|_| anyhow!("Steam StoreStats failed."))?;
         self.pump_callbacks_for(Duration::from_millis(900));
         Ok(())
     }
@@ -187,13 +180,12 @@ impl SteamSession {
         for api_name in api_names {
             let achievement = stats.achievement(api_name);
             let result = if unlocked { achievement.set() } else { achievement.clear() };
-            result.with_context(|| format!("Achievement değiştirilemedi: {api_name}"))?;
+            result.map_err(|_| anyhow!("Could not update achievement: {api_name}"))?;
             changed += 1;
         }
 
         if changed > 0 {
-            stats.store_stats()
-                .map_err(|_| anyhow!("Steam StoreStats başarısız oldu."))?;
+            stats.store_stats().map_err(|_| anyhow!("Steam StoreStats failed."))?;
             self.pump_callbacks_for(Duration::from_millis(1100));
         }
 
