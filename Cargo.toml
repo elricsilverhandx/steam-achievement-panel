@@ -1,0 +1,18 @@
+[package]
+name = "steam-achievement-panel"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+description = "A modern cross-platform Steam achievement and idle-time panel."
+repository = "https://github.com/elricsilverhandx/steam-achievement-panel"
+
+[dependencies]
+anyhow = "1.0"
+eframe = "0.31"
+steamworks = "0.13.1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
