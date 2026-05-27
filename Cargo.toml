@@ -10,6 +10,7 @@ repository = "https://github.com/elricsilverhandx/steam-achievement-panel"
 [dependencies]
 anyhow = "1.0"
 eframe = "0.31"
+egui_extras = { version = "0.31", features = ["all_loaders"] }
 steamworks = "0.13.1"
 
 [profile.release]
