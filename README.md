@@ -1,6 +1,6 @@
 # Steam Achievement Panel
 
-A modern cross-platform Rust desktop app for Steam achievement inspection, achievement state changes, and simple idle-session tracking.
+A modern cross-platform Rust desktop app for Steam achievement inspection, achievement state changes, installed-game browsing, and simple idle-session tracking.
 
 > ⚠️ **Important warning**
 >
@@ -9,13 +9,17 @@ A modern cross-platform Rust desktop app for Steam achievement inspection, achie
 ## Features
 
 - Modern dark UI built with `egui`/`eframe`
-- Connect to a Steam AppID
+- Local Steam library scanner using `libraryfolders.vdf` and `appmanifest_*.acf`
+- Installed game list with Steam CDN header images
+- Searchable game catalog
+- Connect to a Steam AppID manually or by selecting a game
 - Keep an initialized Steam session alive for idle/playtime-style tracking
 - List achievements exposed by Steamworks
+- Search, filter hidden, locked, and unlocked achievements
 - Unlock or lock individual achievements
 - Unlock all visible / lock all visible actions
 - Clear warning gate before any write action
-- GitHub Actions release workflow for:
+- Packaging scripts for:
   - macOS `.dmg`
   - Windows `.zip` with `.exe`
   - Linux `.tar.gz`
@@ -37,14 +41,39 @@ For quick Steamworks testing you can try AppID `480`.
 
 ## Release builds
 
-Push a tag like this:
+A workflow template is included at:
+
+```text
+docs/release-workflow.yml
+```
+
+To enable GitHub Actions releases, copy it to:
+
+```text
+.github/workflows/release.yml
+```
+
+Then push a tag:
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow builds release artifacts and attaches them to a GitHub Release.
+The workflow template builds release artifacts and attaches them to a GitHub Release. It uses the scripts in `scripts/`.
+
+## Packaging scripts
+
+```bash
+bash scripts/package-macos.sh aarch64-apple-darwin steam-achievement-panel-macos-arm64
+bash scripts/package-linux.sh x86_64-unknown-linux-gnu steam-achievement-panel-linux-x64
+```
+
+On Windows:
+
+```cmd
+scripts\package-windows.cmd x86_64-pc-windows-msvc steam-achievement-panel-windows-x64
+```
 
 ## Notes
 
