@@ -9,9 +9,13 @@ on:
 permissions:
   contents: write
 
+env:
+  CARGO_TERM_COLOR: always
+  MACOSX_DEPLOYMENT_TARGET: "13.0"
+
 jobs:
   build:
-    name: Build
+    name: Build ${{ matrix.artifact }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -19,10 +23,10 @@ jobs:
         include:
           - os: macos-14
             target: aarch64-apple-darwin
-            artifact: steam-achievement-panel-macos-arm64
+            artifact: steam-achievement-panel-macos-ventura-arm64
           - os: macos-13
             target: x86_64-apple-darwin
-            artifact: steam-achievement-panel-macos-x64
+            artifact: steam-achievement-panel-macos-ventura-intel
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: steam-achievement-panel-windows-x64
@@ -32,29 +36,40 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libasound2-dev libx11-dev libxkbcommon-x11-dev
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libasound2-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libwayland-dev libudev-dev libfontconfig1-dev libssl-dev pkg-config
+
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
+
       - name: Package macOS DMG
         if: runner.os == 'macOS'
         run: bash scripts/package-macos.sh ${{ matrix.target }} ${{ matrix.artifact }}
+
       - name: Package Windows ZIP
         if: runner.os == 'Windows'
         shell: cmd
         run: scripts\package-windows.cmd ${{ matrix.target }} ${{ matrix.artifact }}
+
       - name: Package Linux tar.gz
         if: runner.os == 'Linux'
         run: bash scripts/package-linux.sh ${{ matrix.target }} ${{ matrix.artifact }}
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: dist/*
+          if-no-files-found: error
 
   release:
     needs: build
