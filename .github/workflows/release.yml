@@ -47,7 +47,7 @@ jobs:
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libasound2-dev libx11-dev libxkbcommon-x11-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libssl-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libasound2-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libwayland-dev libudev-dev libfontconfig1-dev libssl-dev pkg-config
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
